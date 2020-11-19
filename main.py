@@ -1,23 +1,24 @@
 # -*- coding: utf-8 -*-
 
 import sys
- 
+import os
+
+
 from PySide2 import QtCore, QtGui, QtWidgets
 from PySide2.QtUiTools import QUiLoader
- 
- 
-class UISample(QtWidgets.QMainWindow):
+
+from main_widget import MainWidget
+
+
+class MainWindow(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
-        super(UISample, self).__init__(parent)
-        self.resize(400, 300)
- 
+        super(MainWindow, self).__init__(parent)
+        self.mainWidget = MainWidget()
+        self.setCentralWidget(self.mainWidget)
 
-def Main():
+
+if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
-    a = UISample()
-    a.show()
+    mainWindow = MainWindow()
+    mainWindow.show()
     sys.exit(app.exec_())
-
-
-if __name__ == '__main__':
-    Main()
