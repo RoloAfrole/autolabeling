@@ -13,6 +13,7 @@ from PySide2.QtWidgets import QHBoxLayout, QVBoxLayout
 from PySide2.QtUiTools import QUiLoader
 
 from capture_settings import CaptureSettingWidget
+from camera_frame import CameraFrame
 
 
 class MainWidget(QWidget):
@@ -25,7 +26,7 @@ class MainWidget(QWidget):
     def setup_ui(self):
         """Initialize widgets.
         """
-        self.image_label = QLabel()
+        self.image_label = CameraFrame()
         self.image_label.setFixedSize(self.video_size)
 
         self.record_button = QPushButton("Record")
@@ -78,25 +79,36 @@ class MainWidget(QWidget):
         self.image_label.setPixmap(QPixmap.fromImage(image))
 
     def draw_captured(self, frame):
+        pos, r = self.get_pos_r()
         frame = cv2.circle(
             frame,
-            (self.capture_setting.X, self.capture_setting.Y),
-            self.capture_setting.RADIUS,
+            pos,
+            r,
             (255, 69, 0),
             thickness=1,
             lineType=cv2.LINE_AA,
             shift=0,
         )
         frame = cv2.circle(
-            frame,
-            (self.capture_setting.X, self.capture_setting.Y),
-            1,
-            (255, 69, 0),
-            thickness=-1,
-            lineType=cv2.LINE_AA,
-            shift=0,
+            frame, pos, 1, (255, 69, 0), thickness=-1, lineType=cv2.LINE_AA, shift=0,
         )
         return frame
+
+    def get_pos_r(self):
+        if self.capture_setting.use_cursor:
+            if self.image_label.npos is not None:
+                return (
+                    (self.image_label.npos.x(), self.image_label.npos.y()),
+                    int(self.capture_setting.RADIUS * self.image_label.r_amp),
+                )
+            else:
+                return (0, 0), self.capture_setting.RADIUS
+        else:
+            return (
+                (self.capture_setting.X, self.capture_setting.Y),
+                self.capture_setting.RADIUS,
+            )
+
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)

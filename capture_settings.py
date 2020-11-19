@@ -30,6 +30,8 @@ class CaptureSettingWidget(QWidget):
         self.RADIUS = 50
         self.X = 100
         self.Y = 100
+        # self.use_cursor = False
+        self.use_cursor = True
 
         self.setting_label = QLabel('Radius: {} px, X, Y = {}, {}'.format(self.RADIUS, self.X, self.Y))
         
@@ -70,6 +72,13 @@ class CaptureSettingWidget(QWidget):
         self.RADIUS = int(float(self.radius_line_edit.text()))
         self.X = int(float(self.x_line_edit.text()))
         self.Y = int(float(self.y_line_edit.text()))
+        self.set_display_settings()
+        self.set_edit_settings()
+
+    def set_settings_by_input(self, radius, x, y):
+        self.RADIUS = int(float(radius))
+        self.X = int(float(x))
+        self.Y = int(float(y))
         self.set_display_settings()
         self.set_edit_settings()
 
