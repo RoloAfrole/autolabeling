@@ -12,6 +12,8 @@ from PySide2.QtWidgets import QWidget, QLabel, QPushButton
 from PySide2.QtWidgets import QHBoxLayout, QVBoxLayout
 from PySide2.QtUiTools import QUiLoader
 
+from capture_settings import CaptureSettingWidget
+
 
 class MainWidget(QWidget):
     def __init__(self, parent=None):
@@ -26,21 +28,21 @@ class MainWidget(QWidget):
         self.image_label = QLabel()
         self.image_label.setFixedSize(self.video_size)
 
-        self.quit_button = QPushButton("Quit")
-        self.quit_button.clicked.connect(self.close)
+        self.record_button = QPushButton("Record")
+        self.stop_button = QPushButton("Stop")
+        # self.record_button.clicked.connect(self.close)
 
-        self.s1_button = QPushButton("1")
-        self.s2_button = QPushButton("2")
-        self.s3_button = QPushButton("3")
+        self.capture_setting = CaptureSettingWidget()
 
         self.sub1_layout = QVBoxLayout()
         self.sub1_layout.addWidget(self.image_label)
-        self.sub1_layout.addWidget(self.quit_button)
+        self.sub12_layout = QHBoxLayout()
+        self.sub12_layout.addWidget(self.record_button)
+        self.sub12_layout.addWidget(self.stop_button)
+        self.sub1_layout.addLayout(self.sub12_layout)
 
         self.sub2_layout = QVBoxLayout()
-        self.sub2_layout.addWidget(self.s1_button)
-        self.sub2_layout.addWidget(self.s2_button)
-        self.sub2_layout.addWidget(self.s3_button)
+        self.sub2_layout.addWidget(self.capture_setting)
 
         self.main_layout = QHBoxLayout()
         self.main_layout.addLayout(self.sub1_layout)
@@ -65,6 +67,7 @@ class MainWidget(QWidget):
         _, frame = self.capture.read()
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         frame = cv2.flip(frame, 1)
+        frame = self.draw_captured(frame)
         image = QImage(
             frame,
             frame.shape[1],
@@ -74,6 +77,26 @@ class MainWidget(QWidget):
         )
         self.image_label.setPixmap(QPixmap.fromImage(image))
 
+    def draw_captured(self, frame):
+        frame = cv2.circle(
+            frame,
+            (self.capture_setting.X, self.capture_setting.Y),
+            self.capture_setting.RADIUS,
+            (255, 69, 0),
+            thickness=1,
+            lineType=cv2.LINE_AA,
+            shift=0,
+        )
+        frame = cv2.circle(
+            frame,
+            (self.capture_setting.X, self.capture_setting.Y),
+            1,
+            (255, 69, 0),
+            thickness=-1,
+            lineType=cv2.LINE_AA,
+            shift=0,
+        )
+        return frame
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
