@@ -9,7 +9,7 @@ from PySide2 import QtCore, QtGui, QtWidgets
 from PySide2.QtCore import QTimer, QSize
 from PySide2.QtGui import QImage, QPixmap
 from PySide2.QtWidgets import QWidget, QLabel, QPushButton, QLineEdit
-from PySide2.QtWidgets import QHBoxLayout, QVBoxLayout, QCheckBox
+from PySide2.QtWidgets import QHBoxLayout, QVBoxLayout, QCheckBox, QFileDialog
 from PySide2.QtUiTools import QUiLoader
 
 from autolabeling_utils import checkdir
@@ -70,6 +70,13 @@ class CaptureSettingWidget(QWidget):
         self.capture_fps_layout.addWidget(self.capture_fps_label)
         self.capture_fps_layout.addWidget(self.capture_fps_line_edit)
 
+        self.save_dir_label = QLabel("Save Dir : {}".format(self.root_save_dir))
+        self.select_save_dir_button = QPushButton("Select!")
+        self.select_save_dir_button.clicked.connect(self.select_dir)
+        self.save_dir_layout = QHBoxLayout()
+        self.save_dir_layout.addWidget(self.save_dir_label)
+        self.save_dir_layout.addWidget(self.select_save_dir_button)
+
         self.set_button = QPushButton("Set")
         self.set_button.clicked.connect(self.set_settings)
 
@@ -80,6 +87,7 @@ class CaptureSettingWidget(QWidget):
         self.main_layout.addWidget(self.cursor_mode)
         self.main_layout.addLayout(self.capture_fps_layout)
         self.main_layout.addWidget(self.set_button)
+        self.main_layout.addLayout(self.save_dir_layout)
 
         self.setLayout(self.main_layout)
 
@@ -105,8 +113,8 @@ class CaptureSettingWidget(QWidget):
         self.setting_label.setText(self.get_display_str())
 
     def get_display_str(self):
-        return "Base Radius: {} px, X, Y = {}, {}\nCursor Mode: {}\nCapture fps: {}\nSave Dir: {}".format(
-            self.RADIUS, self.X, self.Y, "On" if self.use_cursor else "Off", self.captur_frame_per_s, self.get_full_save_dirpath()
+        return "Base Radius: {} px, X, Y = {}, {}\nCursor Mode: {}\nCapture fps: {}".format(
+            self.RADIUS, self.X, self.Y, "On" if self.use_cursor else "Off", self.captur_frame_per_s
         )
 
     def set_edit_settings(self):
@@ -137,6 +145,12 @@ class CaptureSettingWidget(QWidget):
             return self.root_save_dir
         else:
             return os.path.join(self.root_save_dir, self.save_dir)
+
+    def select_dir(self):
+        dir_path = QFileDialog.getExistingDirectory(self, 'Select Directory', os.path.expanduser(self.root_save_dir) )
+        if dir_path:
+            self.root_save_dir = dir_path
+            self.save_dir_label.setText("Save Dir : {}".format(self.root_save_dir))
 
 
 if __name__ == "__main__":

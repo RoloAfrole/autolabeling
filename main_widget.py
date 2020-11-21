@@ -35,7 +35,7 @@ class MainWidget(QWidget):
         self.record_mode = False
         self.record_timer = None
         self.frame_count = 0
-        self.camera_id = 0
+        self.camera_id = 1
         self.capture = None
 
     def setup_ui(self):
@@ -209,6 +209,9 @@ class MainWidget(QWidget):
             self.stop_button.setEnabled(False)
             self.record_button.setEnabled(True)
 
+    def __del__(self):
+        if self.capture is not None:
+            self.capture.release()
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)
