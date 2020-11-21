@@ -10,7 +10,7 @@ import json
 from PySide2 import QtCore, QtGui, QtWidgets
 from PySide2.QtCore import QTimer, QSize
 from PySide2.QtGui import QImage, QPixmap
-from PySide2.QtWidgets import QWidget, QLabel, QPushButton
+from PySide2.QtWidgets import QWidget, QLabel, QPushButton, QLineEdit
 from PySide2.QtWidgets import QHBoxLayout, QVBoxLayout
 from PySide2.QtUiTools import QUiLoader
 
@@ -27,19 +27,39 @@ from autolabeling_utils import (
 class MainWidget(QWidget):
     def __init__(self, parent=None):
         super(MainWidget, self).__init__(parent)
-        self.video_size = QSize(800, 600)
         self.set_init_settings()
         self.setup_ui()
-        self.setup_camera()
 
     def set_init_settings(self):
+        self.video_size = QSize(800, 600)
         self.record_mode = False
         self.record_timer = None
         self.frame_count = 0
+        self.camera_id = 0
+        self.capture = None
 
     def setup_ui(self):
         """Initialize widgets.
         """
+        self.camera_label = QLabel("Camera ID: ")
+        self.camera_line_edit = QLineEdit("{}".format(self.camera_id))
+        self.camera_width_label = QLabel("Width: ")
+        self.camera_width_line_edit = QLineEdit("{}".format(self.video_size.width()))
+        self.camera_height_label = QLabel("Height: ")
+        self.camera_height_line_edit = QLineEdit("{}".format(self.video_size.height()))
+        self.camera_load_button = QPushButton("Load Camera")
+
+        self.camera_load_button.clicked.connect(self.setup_camera)
+
+        self.camera_id_layout = QHBoxLayout()
+        self.camera_id_layout.addWidget(self.camera_label)
+        self.camera_id_layout.addWidget(self.camera_line_edit)
+        self.camera_id_layout.addWidget(self.camera_width_label)
+        self.camera_id_layout.addWidget(self.camera_width_line_edit)
+        self.camera_id_layout.addWidget(self.camera_height_label)
+        self.camera_id_layout.addWidget(self.camera_height_line_edit)
+        self.camera_id_layout.addWidget(self.camera_load_button)
+
         self.image_label = CameraFrame()
         self.image_label.setFixedSize(self.video_size)
 
@@ -47,10 +67,13 @@ class MainWidget(QWidget):
         self.stop_button = QPushButton("Stop")
         self.record_button.clicked.connect(self.start_record)
         self.stop_button.clicked.connect(self.stop_record)
+        self.record_button.setEnabled(False)
+        self.stop_button.setEnabled(False)
 
         self.capture_setting = CaptureSettingWidget()
 
         self.sub1_layout = QVBoxLayout()
+        self.sub1_layout.addLayout(self.camera_id_layout)
         self.sub1_layout.addWidget(self.image_label)
         self.sub12_layout = QHBoxLayout()
         self.sub12_layout.addWidget(self.record_button)
@@ -68,18 +91,28 @@ class MainWidget(QWidget):
 
         self.record_timer = QTimer()
         self.record_timer.timeout.connect(self.save_data)
-        self.change_record_mode(self.record_mode)
 
     def setup_camera(self):
         """Initialize camera.
         """
-        self.capture = cv2.VideoCapture(1)
+        self.change_camera_setting()
+        if self.record_mode is True:
+            self.stop_record()
+        self.change_record_mode(self.record_mode)
+        if self.capture is not None:
+            self.capture.release()
+        self.capture = cv2.VideoCapture(self.camera_id)
         self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, self.video_size.width())
         self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, self.video_size.height())
 
         self.timer = QTimer()
         self.timer.timeout.connect(self.display_video_stream)
         self.timer.start(30)
+
+    def change_camera_setting(self):
+        self.camera_id = int(self.camera_line_edit.text())
+        self.video_size = QSize(int(self.camera_width_line_edit.text()), int(self.camera_height_line_edit.text()))
+        self.image_label.setFixedSize(self.video_size)
 
     def display_video_stream(self):
         """Read frame from camera and repaint QLabel widget.
