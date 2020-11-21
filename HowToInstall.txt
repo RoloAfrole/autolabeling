@@ -1,0 +1,4 @@
+conda create -n autolabeling python=3.7
+conda activate autolabeling
+conda install pillow
+conda install -c conda-forge pyside2 opencv
