@@ -1,0 +1,4 @@
+conda create -n=labelme python=3.6 -y
+conda activate labelme
+conda install -c conda-forge pyside2 -y
+conda install -c conda-forge labelme -y
