@@ -177,7 +177,7 @@ class MainWidget(QWidget):
     def save_data(self):
         self.frame_count += 1
         _, frame = self.capture.read()
-        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+        # frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         frame = cv2.flip(frame, 1)
         pos, r = self.get_pos_r()
 
@@ -189,10 +189,12 @@ class MainWidget(QWidget):
         dirpath = self.capture_setting.get_full_save_dirpath()
         image_name = "{}.png".format(base_name)
 
+        # frame = cv2.resize(frame , (int(self.video_size.width()), int(self.video_size.height())))
+
         self.write_image(frame, os.path.join(dirpath, image_name))
 
         json_data = create_circle_labelme_json(
-            pos, r, image_name, self.video_size.height(), self.video_size.width(), frame
+            pos, r, image_name, frame.shape[0], frame.shape[1], frame
         )
         json_path = "{}.json".format(base_name)
         with open(os.path.join(dirpath, json_path), "w") as f:
