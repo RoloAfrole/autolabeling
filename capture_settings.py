@@ -30,6 +30,7 @@ class CaptureSettingWidget(QWidget):
         self.captur_frame_per_s = 1
         self.root_save_dir = './captured'
         self.save_dir = None
+        self.use_ai = False
         
         checkdir(self.root_save_dir, create=True)
 
@@ -64,6 +65,10 @@ class CaptureSettingWidget(QWidget):
         if self.use_cursor:
             self.cursor_mode.setChecked(self.use_cursor)
 
+        self.ai_mode = QCheckBox("AI Mode")
+        if self.use_ai:
+            self.set_ai_checkitems(self.use_ai)
+
         self.capture_fps_label = QLabel("Capture fps:")
         self.capture_fps_line_edit = QLineEdit("{}".format(self.captur_frame_per_s))
         self.capture_fps_layout = QHBoxLayout()
@@ -85,6 +90,7 @@ class CaptureSettingWidget(QWidget):
         self.main_layout.addLayout(self.radius_layout)
         self.main_layout.addLayout(self.xy_layout)
         self.main_layout.addWidget(self.cursor_mode)
+        self.main_layout.addWidget(self.ai_mode)
         self.main_layout.addLayout(self.capture_fps_layout)
         self.main_layout.addWidget(self.set_button)
         self.main_layout.addLayout(self.save_dir_layout)
@@ -97,14 +103,16 @@ class CaptureSettingWidget(QWidget):
             self.x_line_edit.text(),
             self.y_line_edit.text(),
             self.cursor_mode.isChecked(),
+            self.ai_mode.isChecked(),
             self.capture_fps_line_edit.text()
         )
 
-    def set_settings_by_input(self, radius, x, y, is_checked, capture_fps):
+    def set_settings_by_input(self, radius, x, y, is_checked, ai_checked, capture_fps):
         self.RADIUS = int(float(radius))
         self.X = int(float(x))
         self.Y = int(float(y))
         self.set_checkitems(is_checked)
+        self.set_ai_checkitems(ai_checked)
         self.set_captur_frame_per_s(int(float(capture_fps)))
         self.set_display_settings()
         self.set_edit_settings()
@@ -126,6 +134,12 @@ class CaptureSettingWidget(QWidget):
     def set_checkitems(self, is_checked):
         self.use_cursor = is_checked
         self.cursor_mode.setChecked(self.use_cursor)
+
+    def set_ai_checkitems(self, is_checked):
+        self.use_ai = is_checked
+        self.ai_mode.setChecked(self.use_ai)
+        if self.use_ai:
+            self.set_checkitems(False)
 
     def set_captur_frame_per_s(self, new_num):
         if new_num <= 0:
