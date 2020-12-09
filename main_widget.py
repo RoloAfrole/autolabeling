@@ -23,6 +23,12 @@ from autolabeling_utils import (
     convert_valid_json_data,
 )
 
+from conductors.detection.mask_rcnn_trainer import Mask_Rcnn_Trainer
+
+from absl import flags
+import warnings
+warnings.filterwarnings('ignore')
+FLAGS = flags.FLAGS
 
 class MainWidget(QWidget):
     def __init__(self, parent=None):
@@ -214,7 +220,7 @@ class MainWidget(QWidget):
         # frame = cv2.flip(frame, 1)
         pos, r = self.get_pos_r()
 
-        if pos is Not None:
+        if pos is not None:
             # base_name = detail_now_name()
             base_name = "{:04}_{:02}".format(
                 int(self.frame_count / self.capture_setting.captur_frame_per_s),
@@ -246,7 +252,17 @@ class MainWidget(QWidget):
             self.record_button.setEnabled(True)
 
     def load_ai_conductor(self):
-        pass
+        FLAGS.num_classes = 2
+        FLAGS.epochs = 1000
+        FLAGS.batch_size = 1
+        FLAGS.test_batch_size = 1
+        FLAGS.version = 'mask_rcnn_pov'
+
+        # model settings
+        FLAGS.feature_backbone = 'resnet50'
+        FLAGS.use_pretrained = True
+
+        self.ai_conductor = Mask_Rcnn_Trainer(config=FLAGS)
 
     def predict_position(self, frame):
         results = self.ai_conductor.predict_pass_through(images=[frame])
