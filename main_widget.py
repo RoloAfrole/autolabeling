@@ -24,6 +24,8 @@ from autolabeling_utils import (
 )
 
 from conductors.detection.mask_rcnn_trainer import Mask_Rcnn_Trainer
+from conductors.detection.datasets.datasets import Detection_Manager
+from PIL import Image
 
 from absl import flags
 import warnings
@@ -184,14 +186,14 @@ class MainWidget(QWidget):
         self.change_record_mode(self.record_mode)
         if self.capture_setting.ai_mode:
             if self.ai_conductor is None:
-                self.load_ai_conductor(self)
-        if self.capture_setting.save_mode:
+                self.load_ai_conductor()
+        if self.capture_setting.save_data:
             self.capture_setting.set_save_dirpath()
         self.start_record_timer()
 
     def stop_record(self):
         self.stop_record_timer()
-        if self.capture_setting.save_mode:
+        if self.capture_setting.save_data:
             convert_valid_json_data(self.capture_setting.get_full_save_dirpath())
         self.record_mode = False
         self.change_record_mode(self.record_mode)
@@ -208,10 +210,12 @@ class MainWidget(QWidget):
         frame = cv2.flip(frame, 1)
 
         if self.capture_setting.ai_mode:
-            self.predict_position(frame)
+            new_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            new_frame = Image.fromarray(new_frame)
+            self.predict_position(new_frame)
 
-        if self.capture_setting.save_mode:
-            self.save_data()
+        if self.capture_setting.save_data:
+            self.save_data(frame)
 
     def save_data(self, frame):
         # self.frame_count += 1
@@ -268,7 +272,7 @@ class MainWidget(QWidget):
         results = self.ai_conductor.predict_pass_through(images=[frame])
 
         result = results[0]
-        if result['labels'].size() > 0:
+        if result['labels'].size(0) > 0:
             pos_results = [
                 (
                     int((box[2] - box[0]) * 0.5 + box[0]),
@@ -283,7 +287,7 @@ class MainWidget(QWidget):
                 for box in result["boxes"]
             ]
             # th_score = 0.5
-            # obj_num = result['scores'].size()
+            # obj_num = result['scores'].size(0)
             scores = [s for s in result['scores']]
 
             self.ai_pos = (pos_results, r_results, scores)

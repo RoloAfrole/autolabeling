@@ -4,10 +4,9 @@ import sys
 import os
 
 
-from PySide2 import QtCore, QtGui, QtWidgets
-from PySide2.QtUiTools import QUiLoader
-
+from PySide2 import QtWidgets
 from main_widget import MainWidget
+from absl import app
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -17,8 +16,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.setCentralWidget(self.mainWidget)
 
 
-if __name__ == "__main__":
-    app = QtWidgets.QApplication(sys.argv)
+def main(argv):
+    qapp = QtWidgets.QApplication(sys.argv)
     mainWindow = MainWindow()
     mainWindow.show()
-    sys.exit(app.exec_())
+    sys.exit(qapp.exec_())
+
+
+if __name__ == "__main__":
+    app.run(main)
