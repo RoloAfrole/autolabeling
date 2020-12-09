@@ -37,6 +37,8 @@ class MainWidget(QWidget):
         self.frame_count = 0
         self.camera_id = 1
         self.capture = None
+        self.ai_conductor = None
+        self.ai_pos = None
 
     def setup_ui(self):
         """Initialize widgets.
@@ -90,7 +92,7 @@ class MainWidget(QWidget):
         self.setLayout(self.main_layout)
 
         self.record_timer = QTimer()
-        self.record_timer.timeout.connect(self.save_data)
+        self.record_timer.timeout.connect(self.capture_frame)
 
     def setup_camera(self):
         """Initialize camera.
@@ -111,7 +113,10 @@ class MainWidget(QWidget):
 
     def change_camera_setting(self):
         self.camera_id = int(self.camera_line_edit.text())
-        self.video_size = QSize(int(self.camera_width_line_edit.text()), int(self.camera_height_line_edit.text()))
+        self.video_size = QSize(
+            int(self.camera_width_line_edit.text()),
+            int(self.camera_height_line_edit.text()),
+        )
         self.image_label.setFixedSize(self.video_size)
 
     def display_video_stream(self):
@@ -132,39 +137,56 @@ class MainWidget(QWidget):
 
     def draw_captured(self, frame):
         pos, r = self.get_pos_r()
-        frame = cv2.circle(
-            frame, pos, r, (255, 69, 0), thickness=1, lineType=cv2.LINE_AA, shift=0,
-        )
-        frame = cv2.circle(
-            frame, pos, 1, (255, 69, 0), thickness=-1, lineType=cv2.LINE_AA, shift=0,
-        )
+        if pos is None:
+            return frame
+
+        for i in range(len(pos)):
+            frame = cv2.circle(
+                frame, pos[i], r[i], (255, 69, int(50*i)), thickness=1, lineType=cv2.LINE_AA, shift=0,
+            )
+            frame = cv2.circle(
+                frame, pos[i], 1, (255, 69, int(50*i)), thickness=-1, lineType=cv2.LINE_AA, shift=0,
+            )
         return frame
 
     def get_pos_r(self):
         if self.capture_setting.use_cursor:
             if self.image_label.npos is not None:
                 return (
-                    (self.image_label.npos.x(), self.image_label.npos.y()),
-                    int(self.capture_setting.RADIUS * self.image_label.r_amp),
+                    [(self.image_label.npos.x(), self.image_label.npos.y())],
+                    [int(self.capture_setting.RADIUS * self.image_label.r_amp)],
                 )
             else:
                 return (0, 0), self.capture_setting.RADIUS
+        elif self.capture_setting.ai_mode:
+            MAX_OBJECT_NUM = 5
+            if self.ai_pos is None:
+                return (None, None)
+            elif len(self.ai_pos(0)) > MAX_OBJECT_NUM:
+                return (self.ai_pos(0)[:MAX_OBJECT_NUM], self.ai_pos(1)[:MAX_OBJECT_NUM])
+            else:
+                return (self.ai_pos(0), self.ai_pos(1))
         else:
             return (
-                (self.capture_setting.X, self.capture_setting.Y),
-                self.capture_setting.RADIUS,
+                ([self.capture_setting.X, self.capture_setting.Y)],
+                [self.capture_setting.RADIUS],
             )
 
     def start_record(self):
         self.frame_count = 0
         self.record_mode = True
         self.change_record_mode(self.record_mode)
-        self.capture_setting.set_save_dirpath()
+        if self.capture_setting.ai_mode:
+            if self.ai_conductor is None:
+                self.load_ai_conductor(self)
+        if self.capture_setting.save_mode:
+            self.capture_setting.set_save_dirpath()
         self.start_record_timer()
 
     def stop_record(self):
         self.stop_record_timer()
-        convert_valid_json_data(self.capture_setting.get_full_save_dirpath())
+        if self.capture_setting.save_mode:
+            convert_valid_json_data(self.capture_setting.get_full_save_dirpath())
         self.record_mode = False
         self.change_record_mode(self.record_mode)
 
@@ -174,31 +196,43 @@ class MainWidget(QWidget):
     def stop_record_timer(self):
         self.record_timer.stop()
 
-    def save_data(self):
+    def capture_frame(self):
         self.frame_count += 1
         _, frame = self.capture.read()
-        # frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         frame = cv2.flip(frame, 1)
+
+        if self.capture_setting.ai_mode:
+            self.predict_position(frame)
+
+        if self.capture_setting.save_mode:
+            self.save_data()
+
+    def save_data(self, frame):
+        # self.frame_count += 1
+        # _, frame = self.capture.read()
+        # # frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+        # frame = cv2.flip(frame, 1)
         pos, r = self.get_pos_r()
 
-        # base_name = detail_now_name()
-        base_name = "{:04}_{:02}".format(
-            int(self.frame_count / self.capture_setting.captur_frame_per_s),
-            self.frame_count % self.capture_setting.captur_frame_per_s,
-        )
-        dirpath = self.capture_setting.get_full_save_dirpath()
-        image_name = "{}.png".format(base_name)
+        if pos is Not None:
+            # base_name = detail_now_name()
+            base_name = "{:04}_{:02}".format(
+                int(self.frame_count / self.capture_setting.captur_frame_per_s),
+                self.frame_count % self.capture_setting.captur_frame_per_s,
+            )
+            dirpath = self.capture_setting.get_full_save_dirpath()
+            image_name = "{}.png".format(base_name)
 
-        # frame = cv2.resize(frame , (int(self.video_size.width()), int(self.video_size.height())))
+            # frame = cv2.resize(frame , (int(self.video_size.width()), int(self.video_size.height())))
 
-        self.write_image(frame, os.path.join(dirpath, image_name))
+            self.write_image(frame, os.path.join(dirpath, image_name))
 
-        json_data = create_circle_labelme_json(
-            pos, r, image_name, frame.shape[0], frame.shape[1], frame
-        )
-        json_path = "{}.json".format(base_name)
-        with open(os.path.join(dirpath, json_path), "w") as f:
-            json.dump(json_data, f, indent=2, ensure_ascii=False)
+            json_data = create_circle_labelme_json(
+                pos, r, image_name, frame.shape[0], frame.shape[1], frame
+            )
+            json_path = "{}.json".format(base_name)
+            with open(os.path.join(dirpath, json_path), "w") as f:
+                json.dump(json_data, f, indent=2, ensure_ascii=False)
 
     def write_image(self, frame, image_path):
         cv2.imwrite(image_path, frame)
@@ -211,9 +245,39 @@ class MainWidget(QWidget):
             self.stop_button.setEnabled(False)
             self.record_button.setEnabled(True)
 
+    def load_ai_conductor(self):
+        pass
+
+    def predict_position(self, frame):
+        results = self.ai_conductor.predict_pass_through(images=[frame])
+
+        result = results[0]
+        if result['labels'].size() > 0:
+            pos_results = [
+                (
+                    int((box[2] - box[0]) * 0.5 + box[0]),
+                    int((box[3] - box[1]) * 0.5 + box[1]),
+                )
+                for box in result["boxes"]
+            ]
+            r_results = [
+                int((box[2] - box[0]) * 0.5)
+                if int((box[2] - box[0]) * 0.5) > int((box[3] - box[1]) * 0.5)
+                else int((box[3] - box[1]) * 0.5)
+                for box in result["boxes"]
+            ]
+            # th_score = 0.5
+            # obj_num = result['scores'].size()
+            scores = [s for s in result['scores']]
+
+            self.ai_pos = (pos_results, r_results, scores)
+        else:
+            self.ai_pos = None
+
     def __del__(self):
         if self.capture is not None:
             self.capture.release()
+
 
 if __name__ == "__main__":
     app = QtWidgets.QApplication(sys.argv)

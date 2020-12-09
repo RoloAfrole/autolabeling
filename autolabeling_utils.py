@@ -29,19 +29,20 @@ def create_circle_labelme_json(pos, radius, filename, height, width, frame):
     # image.save(pngBIO, format='png')
     # b_frame = pngBIO.getvalue()
 
-    points = [
-        [float(pos[0]), float(pos[1])],
-        [float(pos[0]) + float(radius), float(pos[1])],
-    ]
-
     shapes = []
-    shape = {}
-    shape["label"] = "pov"
-    shape["points"] = points
-    shape["group_id"] = None
-    shape["shape_type"] = "circle"
-    shape["flags"] = {}
-    shapes.append(shape)
+    for i in range(len(pos)):
+        points = [
+            [float(pos[i][0]), float(pos[i][1])],
+            [float(pos[i][0]) + float(radius[i]), float(pos[i][1])],
+        ]
+
+        shape = {}
+        shape["label"] = "pov"
+        shape["points"] = points
+        shape["group_id"] = None
+        shape["shape_type"] = "circle"
+        shape["flags"] = {}
+        shapes.append(shape)
 
     json_data = {}
 
