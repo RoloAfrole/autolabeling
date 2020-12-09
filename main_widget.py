@@ -168,7 +168,7 @@ class MainWidget(QWidget):
                 return (self.ai_pos(0), self.ai_pos(1))
         else:
             return (
-                ([self.capture_setting.X, self.capture_setting.Y)],
+                [(self.capture_setting.X, self.capture_setting.Y)],
                 [self.capture_setting.RADIUS],
             )
 
