@@ -165,7 +165,7 @@ class MainWidget(QWidget):
                     [int(self.capture_setting.RADIUS * self.image_label.r_amp)],
                 )
             else:
-                return (0, 0), self.capture_setting.RADIUS
+                return [(0, 0)], [self.capture_setting.RADIUS]
         elif self.capture_setting.ai_mode:
             MAX_OBJECT_NUM = 5
             if self.ai_pos is None:
